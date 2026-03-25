@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora GROW</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState } = React;
+
+        function CalculadoraGROW() {
+            // Estados para fees
+            const [setup, setSetup] = useState(1000);
+            const [mgmtMensual, setMgmtMensual] = useState(400);
+            const [successFee, setSuccessFee] = useState(6);
+            
+            // Estados para costos
+            const [tuSueldo, setTuSueldo] = useState(40000);
+            const costosGrowFijos = 11478;
+            
+            // Estados para clientes - AHORA EDITABLES
+            const [clientes, setClientes] = useState([
+                { nombre: 'Flores', ventas: 36000, margen: 80 },
+                { nombre: 'Humana Ropa', ventas: 24998, margen: 73 },
+                { nombre: 'Humana Bijou', ventas: 24998, margen: 78 },
+                { nombre: 'The Brands Club', ventas: 22504, margen: 63 }
+            ]);
+
+            // Función para actualizar cliente
+            const updateCliente = (index, field, value) => {
+                const newClientes = [...clientes];
+                if (field === 'nombre') {
+                    newClientes[index][field] = value;
+                } else {
+                    newClientes[index][field] = parseFloat(value) || 0;
+                }
+                setClientes(newClientes);
+            };
+
+            // Función para agregar cliente
+            const addCliente = () => {
+                setClientes([...clientes, { nombre: 'Nuevo Cliente', ventas: 30000, margen: 70 }]);
+            };
+
+            // Función para eliminar cliente
+            const removeCliente = (index) => {
+                if (clientes.length > 1) {
+                    const newClientes = clientes.filter((_, i) => i !== index);
+                    setClientes(newClientes);
+                }
+            };
+
+            // Cálculos
+            const calcularFeesCliente = (ventas) => {
+                return setup + (mgmtMensual * 12) + (ventas * successFee / 100);
+            };
+
+            const calcularResultadoCliente = (ventas, margen) => {
+                const margenBruto = ventas * margen / 100;
+                const fees = calcularFeesCliente(ventas);
+                const marketing = 4000;
+                const stock = ventas * 0.26;
+                return margenBruto - fees - marketing - stock;
+            };
+
+            const totalFees = clientes.reduce((sum, c) => sum + calcularFeesCliente(c.ventas), 0);
+            const costosVariables = totalFees * 0.05;
+            const totalCostos = costosGrowFijos + tuSueldo + costosVariables;
+            const diferencia = totalFees - totalCostos;
+            const clientesPositivos = clientes.filter(c => calcularResultadoCliente(c.ventas, c.margen) > 0).length;
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-6xl mx-auto">
+                        {/* Header */}
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+                            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+                                Calculadora GROW
+                            </h1>
+                            <p className="text-gray-600">
+                                Cambia los valores y ve los resultados en tiempo real
+                            </p>
+                        </div>
+
+                        {/* Resumen Superior */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div className={`rounded-lg p-6 text-white ${diferencia >= 0 ? 'bg-green-500' : 'bg-red-500'}`}>
+                                <div className="text-sm opacity-90">Diferencia</div>
+                                <div className="text-3xl font-bold">
+                                    €{diferencia.toLocaleString('es-ES')}
+                                </div>
+                                <div className="text-sm mt-1">
+                                    {diferencia >= 0 ? '✓ Te alcanza' : '❌ Te falta'}
+                                </div>
+                            </div>
+                            
+                            <div className="bg-blue-500 rounded-lg p-6 text-white">
+                                <div className="text-sm opacity-90">Cobras (fees)</div>
+                                <div className="text-3xl font-bold">
+                                    €{totalFees.toLocaleString('es-ES')}
+                                </div>
+                                <div className="text-sm mt-1">Total año 1</div>
+                            </div>
+                            
+                            <div className="bg-purple-500 rounded-lg p-6 text-white">
+                                <div className="text-sm opacity-90">Clientes positivos</div>
+                                <div className="text-3xl font-bold">
+                                    {clientesPositivos} de {clientes.length}
+                                </div>
+                                <div className="text-sm mt-1">Ganan dinero año 1</div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Columna Izquierda: Inputs */}
+                            <div className="space-y-6">
+                                {/* Sección 1: Fees */}
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <h2 className="text-xl font-bold text-blue-700 mb-4">
+                                        1. Fees que cobras
+                                    </h2>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Setup año 1
+                                            </label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    value={setup}
+                                                    onChange={(e) => setSetup(parseInt(e.target.value) || 0)}
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                                <span className="ml-2 text-gray-600">€</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Management mensual
+                                            </label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    value={mgmtMensual}
+                                                    onChange={(e) => setMgmtMensual(parseInt(e.target.value) || 0)}
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                                <span className="ml-2 text-gray-600">€/mes</span>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Success fee año 1
+                                            </label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    value={successFee}
+                                                    onChange={(e) => setSuccessFee(parseInt(e.target.value) || 0)}
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                                <span className="ml-2 text-gray-600">%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sección 2: Tus Costos */}
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <h2 className="text-xl font-bold text-red-700 mb-4">
+                                        2. Tus costos
+                                    </h2>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Costos operativos GROW
+                                            </label>
+                                            <div className="px-4 py-2 bg-gray-100 rounded-lg text-gray-700">
+                                                €{costosGrowFijos.toLocaleString('es-ES')}/año
+                                            </div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Contador, tech, software, legal, marketing, contingencia
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Tu sueldo/vida
+                                            </label>
+                                            <div className="flex items-center">
+                                                <input
+                                                    type="number"
+                                                    value={tuSueldo}
+                                                    onChange={(e) => setTuSueldo(parseInt(e.target.value) || 0)}
+                                                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                                                />
+                                                <span className="ml-2 text-gray-600">€/año</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-2 border-t">
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-bold text-gray-700">TOTAL NECESITAS:</span>
+                                                <span className="text-xl font-bold text-gray-900">
+                                                    €{totalCostos.toLocaleString('es-ES')}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sección 3: Clientes - EDITABLE */}
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-bold text-blue-700">
+                                            3. Clientes
+                                        </h2>
+                                        <button
+                                            onClick={addCliente}
+                                            className="px-3 py-1 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600"
+                                        >
+                                            + Agregar
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        {clientes.map((cliente, index) => (
+                                            <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                                <div className="flex justify-between items-start mb-3">
+                                                    <input
+                                                        type="text"
+                                                        value={cliente.nombre}
+                                                        onChange={(e) => updateCliente(index, 'nombre', e.target.value)}
+                                                        className="flex-1 px-3 py-1 border border-gray-300 rounded font-semibold focus:ring-2 focus:ring-blue-500"
+                                                    />
+                                                    {clientes.length > 1 && (
+                                                        <button
+                                                            onClick={() => removeCliente(index)}
+                                                            className="ml-2 px-2 py-1 text-red-500 hover:bg-red-50 rounded text-lg"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <label className="block text-xs text-gray-600 mb-1">
+                                                            Ventas €
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            value={cliente.ventas}
+                                                            onChange={(e) => updateCliente(index, 'ventas', e.target.value)}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                    
+                                                    <div>
+                                                        <label className="block text-xs text-gray-600 mb-1">
+                                                            Margen %
+                                                        </label>
+                                                        <input
+                                                            type="number"
+                                                            value={cliente.margen}
+                                                            onChange={(e) => updateCliente(index, 'margen', e.target.value)}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Columna Derecha: Resultados */}
+                            <div className="space-y-6">
+                                {/* Sección 4: Cuánto Cobras */}
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <h2 className="text-xl font-bold text-green-700 mb-4">
+                                        4. ¿Cuánto cobras?
+                                    </h2>
+                                    
+                                    <div className="space-y-2">
+                                        {clientes.map((cliente, index) => {
+                                            const fees = calcularFeesCliente(cliente.ventas);
+                                            return (
+                                                <div key={index} className="flex justify-between py-2 border-b">
+                                                    <span className="text-gray-700">{cliente.nombre}</span>
+                                                    <span className="font-semibold text-green-600">
+                                                        €{fees.toLocaleString('es-ES')}
+                                                    </span>
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        <div className="flex justify-between py-2 pt-4 border-t-2">
+                                            <span className="font-bold text-gray-800">TOTAL FEES</span>
+                                            <span className="text-xl font-bold text-green-600">
+                                                €{totalFees.toLocaleString('es-ES')}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex justify-between py-2 text-sm">
+                                            <span className="text-gray-600">+ Costos variables (5%)</span>
+                                            <span className="text-gray-700">
+                                                €{costosVariables.toLocaleString('es-ES')}
+                                            </span>
+                                        </div>
+
+                                        <div className="flex justify-between py-2 border-t">
+                                            <span className="font-bold text-gray-800">TUS COSTOS TOTALES</span>
+                                            <span className="text-xl font-bold text-gray-900">
+                                                €{totalCostos.toLocaleString('es-ES')}
+                                            </span>
+                                        </div>
+
+                                        <div className={`mt-4 p-4 rounded-lg ${diferencia >= 0 ? 'bg-green-100' : 'bg-red-100'}`}>
+                                            <div className="flex justify-between items-center">
+                                                <span className="font-bold text-gray-800">DIFERENCIA</span>
+                                                <span className={`text-2xl font-bold ${diferencia >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                                    €{diferencia.toLocaleString('es-ES')}
+                                                </span>
+                                            </div>
+                                            <div className={`text-center mt-2 font-bold ${diferencia >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                                {diferencia >= 0 ? '✓✓ TE ALCANZA' : '❌ TE FALTA'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Sección 5: Clientes Ganan */}
+                                <div className="bg-white rounded-lg shadow p-6">
+                                    <h2 className="text-xl font-bold text-green-700 mb-4">
+                                        5. ¿Clientes ganan dinero?
+                                    </h2>
+                                    
+                                    <div className="space-y-2">
+                                        {clientes.map((cliente, index) => {
+                                            const margenBruto = cliente.ventas * cliente.margen / 100;
+                                            const fees = calcularFeesCliente(cliente.ventas);
+                                            const marketing = 4000;
+                                            const stock = cliente.ventas * 0.26;
+                                            const resultado = margenBruto - fees - marketing - stock;
+                                            
+                                            return (
+                                                <div key={index} className={`p-3 rounded-lg ${resultado >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <span className="font-semibold text-gray-800">{cliente.nombre}</span>
+                                                        <span className={`font-bold ${resultado >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                            €{resultado.toLocaleString('es-ES')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="text-xs text-gray-600 space-y-1">
+                                                        <div className="flex justify-between">
+                                                            <span>Margen bruto ({cliente.margen}%):</span>
+                                                            <span>€{margenBruto.toLocaleString('es-ES')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>- Fees:</span>
+                                                            <span>€{fees.toLocaleString('es-ES')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>- Marketing:</span>
+                                                            <span>€{marketing.toLocaleString('es-ES')}</span>
+                                                        </div>
+                                                        <div className="flex justify-between">
+                                                            <span>- Stock:</span>
+                                                            <span>€{stock.toLocaleString('es-ES')}</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        
+                                        <div className="mt-4 p-4 bg-purple-100 rounded-lg">
+                                            <div className="text-center">
+                                                <div className="text-2xl font-bold text-purple-700">
+                                                    {clientesPositivos} de {clientes.length}
+                                                </div>
+                                                <div className="text-sm text-purple-600">
+                                                    clientes tienen resultado positivo
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Footer */}
+                        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mt-6 rounded">
+                            <div className="flex">
+                                <div className="flex-shrink-0">
+                                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div className="ml-3">
+                                    <p className="text-sm text-yellow-700">
+                                        <strong>Objetivo:</strong> Que la DIFERENCIA sea positiva (te alcanza) Y que todos los clientes tengan resultado positivo (ganan dinero). Puedes editar nombres, ventas y márgenes de cada cliente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<CalculadoraGROW />, document.getElementById('root'));
+    </script>
+</body>
+</html>
